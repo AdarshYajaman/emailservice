@@ -1,0 +1,22 @@
+{{template "base" .}}
+
+{{define "content"}}
+<div class="container">
+  <div class="header">
+    <h1>Welcome!</h1>
+  </div>
+  <div class="content">
+    <p>Dear [Recipient Name],</p>
+    <p>
+      Thank you for joining us. We are excited to have you as a part of our
+      community. Stay tuned for updates and feel free to reach out if you have
+      any questions.
+    </p>
+    <p>Best regards,</p>
+    <p>{{ index .Content "name"}}</p>
+  </div>
+  <div class="footer">
+    <p>&copy; 2024 Your Company. All rights reserved.</p>
+  </div>
+</div>
+{{ end }}
