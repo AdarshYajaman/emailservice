@@ -1,18 +1,18 @@
-GET http://localhost:8080/api/alerts
+GET http://localhost:8080/api/alert
 
 ###
-POST http://localhost:8080/api/alerts
+POST http://localhost:8080/api/alert
 content-type: application/json
 
 {
-  "id":"1234",
+  "id":"{{$guid}}",
   "volumes": ["vol1","vol2","vol3"], 
   "alerttype":"mail"
 }
 
 ###
-PATCH http://localhost:8080/api/alerts
+PATCH http://localhost:8080/api/alert
 
 
 ###
-DELETE http://localhost:8080/api/alerts/
+DELETE http://localhost:8080/api/alert

@@ -4,9 +4,11 @@ import (
 	"103-EmailService/pkg/config"
 	"103-EmailService/pkg/models"
 	"bytes"
+	"context"
 	"log"
 	"net/smtp"
 	"strings"
+	"time"
 )
 
 var appConfig *config.AppWideConfig
@@ -67,5 +69,15 @@ func fetchMailBody(m models.MailData) string {
 			return ""
 		}
 		return buf.String()
+	}
+}
+
+func CreateAlert(car *models.Alert) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	log.Println("request is ", car)
+	err := appConfig.AlertRepo.Create(ctx, car)
+	if err != nil {
+		log.Println("Unable to insert this document ", err)
 	}
 }

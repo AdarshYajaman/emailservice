@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 // MailData holds a message
 type MailData struct {
@@ -11,10 +13,14 @@ type MailData struct {
 	Template string
 }
 
-// CreateAlertRequest holds fields that are required to process incoming request to email service
-type CreateAlertRequest struct {
-	MigrationId   string   `json:"id"`
-	Volumes       []string `json:"volumes"`
-	AlertType     string   `json:"alertType"`
-	MigrationDate time.Time
+// Alert holds fields that are required to process incoming request to email service
+type Alert struct {
+	MigrationId   string    `json:"id"`
+	Volumes       []string  `json:"volumes"`
+	AlertType     string    `json:"alertType"`
+	MigrationDate time.Time `json:"migrationDate"`
+	AlertSchedule string
+	TemplateName  string
+	AlertStatus   bool
+	AlertTime     time.Time
 }
