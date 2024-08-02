@@ -11,9 +11,9 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, CreateAlertRequest *models.Alert) error
+	Create(ctx context.Context, car *models.Alert) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*models.Alert, error)
-	Update(ctx context.Context, CreateAlertRequest *models.Alert) error
+	Update(ctx context.Context, car *models.Alert) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
 	List(ctx context.Context) ([]*models.Alert, error)
 }
@@ -54,8 +54,20 @@ func (alertRepo *AlertRepository) Delete(ctx context.Context, id primitive.Objec
 	return err
 }
 
-func (alertRepo *AlertRepository) List(ctx context.Context) ([]*models.Alert, error) {
-	cursor, err := alertRepo.collection.Find(ctx, bson.M{})
+// func (alertRepo *AlertRepository) List(ctx context.Context) ([]*models.Alert, error) {
+// 	cursor, err := alertRepo.collection.Find(ctx, bson.M{})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	var alerts []*models.Alert
+// 	if err := cursor.All(ctx, &alerts); err != nil {
+// 		return nil, err
+// 	}
+// 	return alerts, nil
+// }
+
+func (alertRepo *AlertRepository) List(ctx context.Context, filter interface{}) ([]*models.Alert, error) {
+	cursor, err := alertRepo.collection.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}

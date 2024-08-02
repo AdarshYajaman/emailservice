@@ -5,10 +5,16 @@ import (
 	"103-EmailService/pkg/models"
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
+	"net/http"
 	"net/smtp"
+	"runtime/debug"
 	"strings"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var appConfig *config.AppWideConfig
@@ -72,12 +78,62 @@ func fetchMailBody(m models.MailData) string {
 	}
 }
 
-func CreateAlert(car *models.Alert) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+func CreateAlert(w http.ResponseWriter, car *models.Alert) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	log.Println("request is ", car)
 	err := appConfig.AlertRepo.Create(ctx, car)
 	if err != nil {
-		log.Println("Unable to insert this document ", err)
+		serverError(w, err)
 	}
+}
+
+func GetAlerts(w http.ResponseWriter) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	list, err := appConfig.AlertRepo.List(ctx, bson.M{})
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	data, err := json.Marshal(list)
+	if err != nil {
+		serverError(w, err)
+	}
+	w.Write(data)
+}
+
+func GetAlertsByDate(w http.ResponseWriter) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	currentTime := time.Now()
+	list, err := appConfig.AlertRepo.List(ctx, bson.M{
+		"migrationdate": bson.M{
+			"$gte": currentTime,
+			"$lt":  currentTime.AddDate(0, 0, 7),
+		},
+	})
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	data, err := json.Marshal(list)
+	if err != nil {
+		serverError(w, err)
+	}
+	appConfig.InfoLog.Println("value is ", string(data[:]))
+	if data != nil {
+		w.Write(data)
+	}
+
+}
+
+func serverError(w http.ResponseWriter, err error) {
+	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
+	appConfig.ErrorLog.Output(2, trace)
+	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+}
+
+func ClientError(w http.ResponseWriter, status int, err error) {
+	appConfig.InfoLog.Output(2, err.Error())
+	http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
 }

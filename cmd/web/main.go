@@ -20,15 +20,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-var AppConfig config.AppWideConfig
+var appConfig config.AppWideConfig
 
 func main() {
 
 	configure()
 
-	defer close(AppConfig.MailChannel)
+	defer close(appConfig.MailChannel)
+
 	defer func() {
-		if err := AppConfig.MongoClient.Disconnect(context.TODO()); err != nil {
+		if err := appConfig.MongoClient.Disconnect(context.TODO()); err != nil {
 			panic(err)
 		}
 	}()
@@ -42,7 +43,8 @@ func main() {
 	http.ListenAndServe(":8080", router)
 }
 
-func configure() {
+func configure() error {
+
 	props, err := helpers.ReadPropertiesFile("./pkg/config/application.properties")
 	if err != nil {
 		log.Fatal("Unable to locate and parse the property file, failed with error - ", err)
@@ -62,28 +64,32 @@ func configure() {
 		log.Fatal("Unable to establish connection to mongo")
 	}
 
+	//setup repository
 	alertRepo := repository.NewAlertRepository(client.Database("poc"), "email")
+
 	// Create logger for writing information and error messages.
-	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime|log.Lshortfile)
 	errLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
-	AppConfig = config.AppWideConfig{
-		Properties:    props,
-		MailChannel:   mailChan,
-		TemplateCache: mailTemplates,
-		MongoClient:   client,
-		AlertRepo:     alertRepo,
-		InfoLog:       infoLog,
-		ErrorLog:      errLog,
+	appConfig = config.AppWideConfig{
+		Properties:        props,
+		MailChannel:       mailChan,
+		MailTemplateCache: mailTemplates,
+		MongoClient:       client,
+		AlertRepo:         alertRepo,
+		InfoLog:           infoLog,
+		ErrorLog:          errLog,
 	}
 
-	service.SetConfig(&AppConfig)
+	service.SetConfig(&appConfig)
+
+	return nil
 }
 
 func createMongoConnection() (*mongo.Client, error) {
 	// Use the SetServerAPIOptions() method to set the version of the Stable API on the client
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().ApplyURI("mongodb+srv://dbuser:dbuser@cluster0.jwyoxph.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0").SetServerAPIOptions(serverAPI)
+	opts := options.Client().ApplyURI("mongodb+srv://dbuser:dbuser@cluster0.olots7g.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0").SetServerAPIOptions(serverAPI)
 
 	// Create a new client and connect to the server
 	client, err := mongo.Connect(context.TODO(), opts)

@@ -7,7 +7,7 @@ content-type: application/json
 {
   "id":"{{$guid}}",
   "volumes": ["vol1","vol2","vol3"], 
-  "alerttype":"mail"
+  "Alerttype":"mail"
 }
 
 ###

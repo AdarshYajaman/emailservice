@@ -10,12 +10,12 @@ import (
 )
 
 type AppWideConfig struct {
-	Properties    map[string]string
-	UseCache      bool
-	InfoLog       *log.Logger
-	ErrorLog      *log.Logger
-	MailChannel   chan models.MailData
-	TemplateCache map[string]*template.Template
-	MongoClient   *mongo.Client
-	AlertRepo     *repository.AlertRepository
+	Properties        map[string]string
+	UseCache          bool
+	InfoLog           *log.Logger
+	ErrorLog          *log.Logger
+	MailChannel       chan models.MailData
+	MailTemplateCache map[string]*template.Template
+	MongoClient       *mongo.Client
+	AlertRepo         *repository.AlertRepository
 }

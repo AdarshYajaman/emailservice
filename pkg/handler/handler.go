@@ -15,16 +15,17 @@ func CreateAlert(w http.ResponseWriter, req *http.Request) {
 	decoder.DisallowUnknownFields()
 	err := decoder.Decode(&alertRequest)
 	if err != nil {
-		http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
+		service.ClientError(w, http.StatusBadRequest, err)
 		return
 	}
 	alertRequest.AlertType = "email"
-	alertRequest.MigrationDate = time.Now().Add(1*time.Hour + 48)
-	service.CreateAlert(&alertRequest)
+	alertRequest.MigrationDate = time.Now().AddDate(0, 0, 2)
+	service.CreateAlert(w, &alertRequest)
 	fmt.Fprintf(w, "Executing POST on Alerts for %s %s %s", alertRequest.MigrationId, alertRequest.Volumes, alertRequest.AlertType)
 }
 
 func GetAlert(w http.ResponseWriter, req *http.Request) {
+	service.GetAlertsByDate(w)
 	fmt.Fprintf(w, "Executing Get on Alerts")
 }
 
