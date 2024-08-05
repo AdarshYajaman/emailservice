@@ -5,9 +5,11 @@ POST http://localhost:8080/api/alert
 content-type: application/json
 
 {
-  "id":"{{$guid}}",
+  "migrationId":"{{$guid}}",
   "volumes": ["vol1","vol2","vol3"], 
-  "Alerttype":"mail"
+  "Alerttype":"mail",
+  "MigrationDate": "{{$datetime 'YYYY-MM-DD' 2 d}}T00:00:00Z",
+  "isreadytosend": true
 }
 
 ###

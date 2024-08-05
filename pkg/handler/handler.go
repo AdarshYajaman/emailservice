@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func CreateAlert(w http.ResponseWriter, req *http.Request) {
@@ -18,14 +20,21 @@ func CreateAlert(w http.ResponseWriter, req *http.Request) {
 		service.ClientError(w, http.StatusBadRequest, err)
 		return
 	}
-	alertRequest.AlertType = "email"
-	alertRequest.MigrationDate = time.Now().AddDate(0, 0, 2)
 	service.CreateAlert(w, &alertRequest)
 	fmt.Fprintf(w, "Executing POST on Alerts for %s %s %s", alertRequest.MigrationId, alertRequest.Volumes, alertRequest.AlertType)
 }
 
 func GetAlert(w http.ResponseWriter, req *http.Request) {
-	service.GetAlertsByDate(w)
+	now := time.Now()
+	currentDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	filter := bson.M{
+		"migrationdate": bson.M{
+			"$gte": currentDate,
+			"$lt":  currentDate.AddDate(0, 0, 7),
+		},
+		"isreadytosend": true,
+	}
+	service.GetAlerts(w, filter)
 	fmt.Fprintf(w, "Executing Get on Alerts")
 }
 

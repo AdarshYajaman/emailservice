@@ -34,7 +34,6 @@ func main() {
 		}
 	}()
 
-	// startCron()
 	router := http.NewServeMux()
 	router.HandleFunc("GET /api/alert", handler.GetAlert)
 	router.HandleFunc("POST /api/alert", handler.CreateAlert)
@@ -45,31 +44,40 @@ func main() {
 
 func configure() error {
 
-	props, err := helpers.ReadPropertiesFile("./pkg/config/application.properties")
-	if err != nil {
-		log.Fatal("Unable to locate and parse the property file, failed with error - ", err)
+	// Create logger for writing information and error messages.
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime|log.Lshortfile)
+	errLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+	appConfig = config.AppWideConfig{
+		InfoLog:  infoLog,
+		ErrorLog: errLog,
 	}
-	log.Println("Contents of property file are ", props)
+
+	props := config.ReadConfigFile()
+	infoLog.Println("Contents of property file are ", props)
 
 	mailChan := make(chan models.MailData)
 
 	mailTemplates, err := helpers.CreateTemplateCache()
 	if err != nil {
-		log.Fatal("Cache cannot be created")
+		errLog.Fatal("Cache cannot be created")
 	}
 
 	//create mongo connection
-	client, err := createMongoConnection()
+	client, err := createMongoConnection(props.MongoURL)
 	if err != nil {
-		log.Fatal("Unable to establish connection to mongo")
+		errLog.Fatal("Unable to establish connection to mongo")
 	}
 
 	//setup repository
-	alertRepo := repository.NewAlertRepository(client.Database("poc"), "email")
+	alertRepo := repository.NewAlertRepository(client.Database(props.MongoDBName), props.MongoCollectionName)
 
-	// Create logger for writing information and error messages.
-	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime|log.Lshortfile)
-	errLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+	// start cron job
+	cronJobs := startCron()
+	infoLog.Println("Entries are", cronJobs.Entries())
+
+	for eachEntry := range cronJobs.Entries() {
+		infoLog.Println(cronJobs.Entry(cron.EntryID(eachEntry)))
+	}
 
 	appConfig = config.AppWideConfig{
 		Properties:        props,
@@ -79,6 +87,7 @@ func configure() error {
 		AlertRepo:         alertRepo,
 		InfoLog:           infoLog,
 		ErrorLog:          errLog,
+		// CronJobs:          cronJobs,
 	}
 
 	service.SetConfig(&appConfig)
@@ -86,12 +95,10 @@ func configure() error {
 	return nil
 }
 
-func createMongoConnection() (*mongo.Client, error) {
-	// Use the SetServerAPIOptions() method to set the version of the Stable API on the client
-	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().ApplyURI("mongodb+srv://dbuser:dbuser@cluster0.olots7g.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0").SetServerAPIOptions(serverAPI)
+func createMongoConnection(url string) (*mongo.Client, error) {
 
-	// Create a new client and connect to the server
+	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
+	opts := options.Client().ApplyURI(url).SetServerAPIOptions(serverAPI)
 	client, err := mongo.Connect(context.TODO(), opts)
 	if err != nil {
 		panic(err)
@@ -102,11 +109,11 @@ func createMongoConnection() (*mongo.Client, error) {
 	if err != nil {
 		panic(err)
 	}
-	log.Println("Pinged your deployment. You successfully connected to MongoDB!")
+	appConfig.InfoLog.Println("Pinged your deployment. You successfully connected to MongoDB!")
 	return client, nil
 }
 
-func startCron() {
+func startCron() *cron.Cron {
 	c := cron.New()
 
 	// Define a list of cron expressions and corresponding messages
@@ -120,6 +127,7 @@ func startCron() {
 	for spec, message := range jobs {
 		msg := message // create a new variable to avoid closure capture issue
 		_, err := c.AddFunc(spec, func() { sendAlert(msg) })
+
 		if err != nil {
 			log.Fatalf("Error adding job: %v", err)
 		}
@@ -127,6 +135,8 @@ func startCron() {
 
 	// Start the cron scheduler
 	c.Start()
+
+	return c
 }
 
 func sendAlert(message string) {
