@@ -18,3 +18,23 @@ PATCH http://localhost:8080/api/alert
 
 ###
 DELETE http://localhost:8080/api/alert
+
+
+####
+GET http://localhost:8080/api/schedule
+
+
+
+#####
+
+POST http://localhost:8080/api/schedule
+content-type: application/json
+
+{
+  "CronExpression":"*/8 * * * *",
+  "Comments": "Alert every 8 minute", 
+  "FromDate":1,
+  "ToDate": 6,
+  "TemplateName": "simple.page.tmpl",
+  "AddedBy":"ab30342"
+}

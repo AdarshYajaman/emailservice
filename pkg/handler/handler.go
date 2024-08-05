@@ -20,8 +20,16 @@ func CreateAlert(w http.ResponseWriter, req *http.Request) {
 		service.ClientError(w, http.StatusBadRequest, err)
 		return
 	}
-	service.CreateAlert(w, &alertRequest)
-	fmt.Fprintf(w, "Executing POST on Alerts for %s %s %s", alertRequest.MigrationId, alertRequest.Volumes, alertRequest.AlertType)
+	data, err := service.CreateAlert(&alertRequest)
+	if err != nil {
+		service.ServerError(w, err)
+		return
+	}
+	_, err = w.Write(data)
+	if err != nil {
+		service.ServerError(w, err)
+	}
+	// fmt.Fprintf(w, "Executing POST on Alerts for %s %s %s", alertRequest.MigrationId, alertRequest.Volumes, alertRequest.AlertType)
 }
 
 func GetAlert(w http.ResponseWriter, req *http.Request) {
@@ -34,8 +42,16 @@ func GetAlert(w http.ResponseWriter, req *http.Request) {
 		},
 		"isreadytosend": true,
 	}
-	service.GetAlerts(w, filter)
-	fmt.Fprintf(w, "Executing Get on Alerts")
+	data, err := service.GetAlerts(filter)
+	if err != nil {
+		service.ServerError(w, err)
+		return
+	}
+	if len(data) != 4 {
+		w.Write(data)
+	} else {
+		service.NoDataFound(w)
+	}
 }
 
 func UpdateAlert(w http.ResponseWriter, req *http.Request) {
@@ -44,4 +60,40 @@ func UpdateAlert(w http.ResponseWriter, req *http.Request) {
 
 func DeleteAlert(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "Executing Delete on Alerts")
+}
+
+func CreateSchedule(w http.ResponseWriter, req *http.Request) {
+	var jobRequest models.Job
+	decoder := json.NewDecoder(req.Body)
+	decoder.DisallowUnknownFields()
+	err := decoder.Decode(&jobRequest)
+	if err != nil {
+		service.ClientError(w, http.StatusBadRequest, err)
+		return
+	}
+	data, err := service.CreateJob(&jobRequest)
+	if err != nil {
+		service.ServerError(w, err)
+		return
+	}
+	_, err = w.Write(data)
+	if err != nil {
+		service.ServerError(w, err)
+	}
+	// fmt.Fprintf(w, "Executing POST on Alerts for %s %s %s", jobRequest.MigrationId, jobRequest.Volumes, jobRequest.AlertType)
+}
+
+func GetSchedule(w http.ResponseWriter, req *http.Request) {
+
+	filter := bson.M{}
+	data, _, err := service.GetJobs(filter)
+	if err != nil {
+		service.ServerError(w, err)
+		return
+	}
+	if len(data) != 4 {
+		w.Write(data)
+	} else {
+		service.NoDataFound(w)
+	}
 }

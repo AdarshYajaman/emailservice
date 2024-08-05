@@ -28,3 +28,13 @@ type Alert struct {
 	AlertSentTime time.Time
 	IsReadyToSend bool
 }
+
+type Job struct {
+	IndexId        primitive.ObjectID `bson:"_id"`
+	CronExpression string
+	Comments       string
+	FromDate       uint8
+	ToDate         uint8
+	TemplateName   string
+	AddedBy        string
+}

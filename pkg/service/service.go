@@ -73,69 +73,43 @@ func fetchMailBody(m models.MailData) string {
 	}
 }
 
-func CreateAlert(w http.ResponseWriter, alert *models.Alert) {
-	//alert.MigrationDate = time.Now().AddDate(0, 0, 2) //added manually
+func CreateAlert(alert *models.Alert) ([]byte, error) {
+
 	//set defaults
 	alert.AlertType = "email"
-	alert.AlertSchedule = appConfig.Properties.DefaultAlert
-	alert.TemplateName = appConfig.Properties.DefaultTemplate
 	alert.IndexId = primitive.NewObjectID()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	err := appConfig.AlertRepo.Create(ctx, alert)
 	if err != nil {
-		serverError(w, err)
+		return nil, err
 	}
+
+	data, err := json.Marshal(alert)
+	if err != nil {
+		return nil, err
+	}
+
 	//construct maildata model using the alert request and send basic email alert
+
+	return data, nil
 }
 
-func GetAlerts(w http.ResponseWriter, filter interface{}) {
+func GetAlerts(filter interface{}) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	list, err := appConfig.AlertRepo.List(ctx, filter)
 	if err != nil {
-		serverError(w, err)
-		return
+		return nil, err
 	}
 	data, err := json.Marshal(list)
 	if err != nil {
-		serverError(w, err)
+		return nil, err
 	}
-	if len(data) != 4 {
-		w.Write(data)
-	} else {
-		noDataFound(w)
-	}
+	return data, nil
 }
 
-// func GetAlertsByDate(w http.ResponseWriter) {
-// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-// 	defer cancel()
-// 	now := time.Now()
-// 	currentDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-// 	appConfig.InfoLog.Println("Current Date is ", currentDate)
-// 	list, err := appConfig.AlertRepo.List(ctx, bson.M{
-// 		"migrationdate": bson.M{
-// 			"$gte": currentDate,
-// 			"$lt":  currentDate.AddDate(0, 0, 7),
-// 		},
-// 	})
-// 	if err != nil {
-// 		serverError(w, err)
-// 		return
-// 	}
-// 	data, err := json.Marshal(list)
-// 	if err != nil {
-// 		serverError(w, err)
-// 	}
-// 	appConfig.InfoLog.Println("value is ", string(data[:]))
-// 	if len(data) != 4 {
-// 		w.Write(data)
-// 	}
-
-// }
-
-func serverError(w http.ResponseWriter, err error) {
+func ServerError(w http.ResponseWriter, err error) {
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
 	appConfig.ErrorLog.Output(2, trace)
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -146,6 +120,37 @@ func ClientError(w http.ResponseWriter, status int, err error) {
 	http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
 }
 
-func noDataFound(w http.ResponseWriter) {
+func NoDataFound(w http.ResponseWriter) {
 	http.Error(w, "No data found for this range", http.StatusNoContent)
+}
+
+func GetJobs(filter interface{}) ([]byte, []*models.Job, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	list, err := appConfig.JobRepo.List(ctx, filter)
+	if err != nil {
+		return nil, nil, err
+	}
+	data, err := json.Marshal(list)
+	if err != nil {
+		return nil, nil, err
+	}
+	return data, list, nil
+}
+
+func CreateJob(job *models.Job) ([]byte, error) {
+	job.IndexId = primitive.NewObjectID()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	err := appConfig.JobRepo.Create(ctx, job)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := json.Marshal(job)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }

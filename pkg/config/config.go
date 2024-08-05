@@ -19,7 +19,8 @@ type ApplicationProperties struct {
 	DefaultAlert        string `mapstructure:"default_alert"`
 	MongoURL            string `mapstructure:"mongo_url"`
 	MongoDBName         string `mapstructure:"mongo_dbname"`
-	MongoCollectionName string `mapstructure:"mongo_collectionname"`
+	AlertCollectionName string `mapstructure:"mongo_alertcollectionname"`
+	JobCollectionName   string `mapstructure:"mongo_jobcollectionname"`
 	MongoTimeout        string `mapstructure:"mongo_timeout"`
 	DefaultTemplate     string `mapstructure:"default_template"`
 }
@@ -37,7 +38,9 @@ type AppWideConfig struct {
 	MailTemplateCache map[string]*template.Template
 	MongoClient       *mongo.Client
 	AlertRepo         *repository.AlertRepository
+	JobRepo           *repository.JobRepository
 	CronJobs          *cron.Cron
+	JobMap            map[string]*models.Job
 }
 
 func ReadConfigFile() *ApplicationProperties {

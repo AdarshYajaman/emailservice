@@ -65,3 +65,59 @@ func (alertRepo *AlertRepository) List(ctx context.Context, filter interface{}) 
 	}
 	return alerts, nil
 }
+
+type Jepository interface {
+	Create(ctx context.Context, job *models.Job) error
+	GetByID(ctx context.Context, id primitive.ObjectID) (*models.Job, error)
+	Update(ctx context.Context, job *models.Job) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
+	List(ctx context.Context) ([]*models.Job, error)
+}
+
+type JobRepository struct {
+	collection *mongo.Collection
+}
+
+func NewJobRepository(db *mongo.Database, collectionName string) *JobRepository {
+	return &JobRepository{
+		collection: db.Collection(collectionName),
+	}
+}
+
+func (jobRepo *JobRepository) Create(ctx context.Context, job *models.Job) error {
+	_, err := jobRepo.collection.InsertOne(ctx, job)
+	return err
+}
+
+func (jobRepo *JobRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*models.Job, error) {
+	var job models.Job
+	err := jobRepo.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&job)
+	return &job, err
+}
+
+func (jobRepo *JobRepository) Update(ctx context.Context, job *models.Job) error {
+	_, err := jobRepo.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": job.IndexId},
+		bson.M{"$set": job},
+		options.Update().SetUpsert(true),
+	)
+	return err
+}
+
+func (jobRepo *JobRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
+	_, err := jobRepo.collection.DeleteOne(ctx, bson.M{"_id": id})
+	return err
+}
+
+func (jobRepo *JobRepository) List(ctx context.Context, filter interface{}) ([]*models.Job, error) {
+	cursor, err := jobRepo.collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	var jobs []*models.Job
+	if err := cursor.All(ctx, &jobs); err != nil {
+		return nil, err
+	}
+	return jobs, nil
+}
