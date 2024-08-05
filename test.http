@@ -5,9 +5,11 @@ POST http://localhost:8080/api/alert
 content-type: application/json
 
 {
-  "id":"{{$guid}}",
+  "migrationId":"{{$guid}}",
   "volumes": ["vol1","vol2","vol3"], 
-  "Alerttype":"mail"
+  "Alerttype":"mail",
+  "MigrationDate": "{{$datetime 'YYYY-MM-DD' 2 d}}T00:00:00Z",
+  "isreadytosend": true
 }
 
 ###
@@ -16,3 +18,23 @@ PATCH http://localhost:8080/api/alert
 
 ###
 DELETE http://localhost:8080/api/alert
+
+
+####
+GET http://localhost:8080/api/schedule
+
+
+
+#####
+
+POST http://localhost:8080/api/schedule
+content-type: application/json
+
+{
+  "CronExpression":"*/8 * * * *",
+  "Comments": "Alert every 8 minute", 
+  "FromDate":1,
+  "ToDate": 6,
+  "TemplateName": "simple.page.tmpl",
+  "AddedBy":"ab30342"
+}
