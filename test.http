@@ -1,4 +1,4 @@
-GET http://localhost:8080/api/alert
+GET http://localhost:8080/api/alerts
 
 ###
 POST http://localhost:8080/api/alert
@@ -21,13 +21,13 @@ DELETE http://localhost:8080/api/alert
 
 
 ####
-GET http://localhost:8080/api/schedule
+GET http://localhost:8080/api/jobs
 
 
 
 #####
 
-POST http://localhost:8080/api/schedule
+POST http://localhost:8080/api/job
 content-type: application/json
 
 {

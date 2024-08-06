@@ -11,7 +11,7 @@ type MailData struct {
 	To       []string
 	From     string
 	Subject  string
-	Content  map[string]string
+	Content  map[string]interface{}
 	Template string
 }
 
@@ -22,13 +22,14 @@ type Alert struct {
 	Volumes       []string           `json:"volumes"`
 	AlertType     string             `json:"alertType"`
 	MigrationDate time.Time          `json:"migrationDate"`
-	AlertSchedule string
-	TemplateName  string
+	// AlertSchedule string
+	// TemplateName  string
 	AlertStatus   bool
 	AlertSentTime time.Time
 	IsReadyToSend bool
 }
 
+// Job holds schedule details to run
 type Job struct {
 	IndexId        primitive.ObjectID `bson:"_id"`
 	CronExpression string
@@ -37,4 +38,5 @@ type Job struct {
 	ToDate         uint8
 	TemplateName   string
 	AddedBy        string
+	CreatedAt      time.Time
 }

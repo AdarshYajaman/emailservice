@@ -32,7 +32,7 @@ func CreateAlert(w http.ResponseWriter, req *http.Request) {
 	// fmt.Fprintf(w, "Executing POST on Alerts for %s %s %s", alertRequest.MigrationId, alertRequest.Volumes, alertRequest.AlertType)
 }
 
-func GetAlert(w http.ResponseWriter, req *http.Request) {
+func GetAlerts(w http.ResponseWriter, req *http.Request) {
 	now := time.Now()
 	currentDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	filter := bson.M{
@@ -42,7 +42,7 @@ func GetAlert(w http.ResponseWriter, req *http.Request) {
 		},
 		"isreadytosend": true,
 	}
-	data, err := service.GetAlerts(filter)
+	data, _, err := service.GetAlerts(filter)
 	if err != nil {
 		service.ServerError(w, err)
 		return
@@ -62,7 +62,7 @@ func DeleteAlert(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "Executing Delete on Alerts")
 }
 
-func CreateSchedule(w http.ResponseWriter, req *http.Request) {
+func CreateJob(w http.ResponseWriter, req *http.Request) {
 	var jobRequest models.Job
 	decoder := json.NewDecoder(req.Body)
 	decoder.DisallowUnknownFields()
@@ -83,8 +83,7 @@ func CreateSchedule(w http.ResponseWriter, req *http.Request) {
 	// fmt.Fprintf(w, "Executing POST on Alerts for %s %s %s", jobRequest.MigrationId, jobRequest.Volumes, jobRequest.AlertType)
 }
 
-func GetSchedule(w http.ResponseWriter, req *http.Request) {
-
+func GetJobs(w http.ResponseWriter, req *http.Request) {
 	filter := bson.M{}
 	data, _, err := service.GetJobs(filter)
 	if err != nil {

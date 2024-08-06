@@ -16,13 +16,16 @@ type ApplicationProperties struct {
 	SMTPHost            string `mapstructure:"smtp_host"`
 	SMTPPort            string `mapstructure:"smtp_port"`
 	SMTPTimeOut         string `mapstructure:"smtp_timeout"`
-	DefaultAlert        string `mapstructure:"default_alert"`
+	SMTPChannelBufSize  int    `mapstructure:"smtp_channelbufsize"`
+	SMTPWorkers         int    `mapstructure:"smtp_workers"`
+	DefaultJobRefresh   string `mapstructure:"default_jobrefresh"`
+	DefaultTemplate     string `mapstructure:"default_template"`
+	FromAddress         string `mapstructure:"default_fromaddress"`
 	MongoURL            string `mapstructure:"mongo_url"`
 	MongoDBName         string `mapstructure:"mongo_dbname"`
+	MongoTimeout        string `mapstructure:"mongo_timeout"`
 	AlertCollectionName string `mapstructure:"mongo_alertcollectionname"`
 	JobCollectionName   string `mapstructure:"mongo_jobcollectionname"`
-	MongoTimeout        string `mapstructure:"mongo_timeout"`
-	DefaultTemplate     string `mapstructure:"default_template"`
 }
 
 // func (props *ApplicationProperties) String() string {
