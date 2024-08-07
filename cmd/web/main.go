@@ -6,6 +6,7 @@ import (
 	"103-EmailService/pkg/helpers"
 	"103-EmailService/pkg/models"
 	"103-EmailService/pkg/repository"
+	"103-EmailService/pkg/scheduler"
 	"103-EmailService/pkg/service"
 	"context"
 	"log"
@@ -40,10 +41,10 @@ func main() {
 
 	router.HandleFunc("POST /api/job", handler.CreateJob)
 	router.HandleFunc("GET /api/jobs", handler.GetJobs)
-	// router.HandleFunc("PATCH /api/schedule", handler.UpdateAlert)
-	// router.HandleFunc("DELETE /api/schedule", handler.DeleteAlert)
+	// router.HandleFunc("PATCH /api/job", handler.UpdateAlert)
+	// router.HandleFunc("DELETE /api/job", handler.DeleteAlert)
 
-	//API endpoint needed to monitor the mail channel
+	//TODO - API endpoint needed to monitor the mail channel capacity and size
 
 	http.ListenAndServe(":8080", router)
 }
@@ -62,7 +63,7 @@ func configure() error {
 	infoLog.Println("Contents of property file are ", props)
 
 	//create a mail channel
-	mailChan := make(chan models.MailData, 1)
+	mailChan := make(chan models.MailData, props.SMTPChannelBufSize)
 
 	//create a local cache
 	mailTemplates, err := helpers.CreateTemplateCache()
@@ -94,14 +95,15 @@ func configure() error {
 	//pass down config to service layer
 	service.SetConfig(&appConfig)
 
-	//start listening to email messages to be sent
+	//start listening to email messages sent to a channel
 	service.ListenToMessages()
 
 	//start a cron to send mails on a schedule
-	// scheduler.StartCRONScheduler(appConfig.Properties.DefaultJobRefresh)
+	scheduler.StartCRONScheduler(appConfig.Properties.DefaultJobRefresh)
 	return nil
 }
 
+// createMongoConnection creates a mongo connection
 func createMongoConnection(url string) (*mongo.Client, error) {
 
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)

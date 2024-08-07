@@ -6,8 +6,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/smtp"
 	"runtime/debug"
@@ -38,16 +38,15 @@ func ListenToMessagesOld() {
 func ListenToMessages() {
 	numWorkers := appConfig.Properties.SMTPWorkers
 	//var wg sync.WaitGroup
-
+	appConfig.InfoLog.Printf("Creating %d workers for sending mail", numWorkers)
 	// Start worker goroutines to read mailData concurrently and send mails
 	for i := 1; i <= numWorkers; i++ {
 		//wg.Add(1)
-
 		go func() {
 			for {
-				// msg := <-appConfig.MailChannel
+				msg := <-appConfig.MailChannel
 				appConfig.InfoLog.Printf("Worker %d received %v\n", i, "test")
-				// SendMailUsingDefault(msg)
+				SendMailUsingDefault(msg)
 				//wg.Done()
 			}
 		}()
@@ -61,39 +60,47 @@ func SendMailUsingDefault(m models.MailData) {
 	address := props.SMTPHost + ":" + props.SMTPPort
 	auth := smtp.PlainAuth("", "", "", props.SMTPHost)
 
+	mailBody, err := fetchMailBody(m)
+	if err != nil {
+		return
+	}
+
 	msg := []byte("To: " + strings.Join(m.To, " ") + "\r\n" +
 		"From: " + m.From + "\r\n" +
 		"Subject: " + m.Subject + "\r\n" +
 		"MIME-version: 1.0;\r\n" +
 		"Content-Type: text/html; charset=\"UTF-8\";\r\n\r\n" +
-		fetchMailBody(m))
+		mailBody)
 
-	err := smtp.SendMail(address, auth, m.From, m.To, msg)
+	err = smtp.SendMail(address, auth, m.From, m.To, msg)
 	if err != nil {
-		appConfig.ErrorLog.Println("Failed to send", err)
+		appConfig.ErrorLog.Println("Failed to send email", err)
+		//TODO write to DB?
+
 	} else {
 		appConfig.InfoLog.Println("Sent successfully")
+		//TODO Update DB with current time when alert was sent?
 	}
 }
 
-func fetchMailBody(m models.MailData) string {
+func fetchMailBody(m models.MailData) (string, error) {
 	if m.Template == "" {
-		return ""
+		return "", errors.New("noo template name was set in the model")
 	} else {
 		myCache := appConfig.MailTemplateCache
 		t, ok := myCache[m.Template]
 		if !ok {
-			log.Println("Not found in cache")
-			return ""
+			appConfig.ErrorLog.Println("Not found in cache - Template Looked up value is ", m.Template)
+			return "", errors.New("not found in cache")
 		}
 
 		buf := new(bytes.Buffer)
 		err := t.Execute(buf, m)
 		if err != nil {
-			log.Println("Template execution failed ", err)
-			return ""
+			appConfig.ErrorLog.Println("Template execution failed ", err)
+			return "", err
 		}
-		return buf.String()
+		return buf.String(), nil
 	}
 }
 
@@ -114,21 +121,10 @@ func CreateAlert(alert *models.Alert) ([]byte, error) {
 		return nil, err
 	}
 
-	// construct maildata model using the alert request and send basic email alert, this has to be made async
-	content := make(map[string]interface{})
-	content["MigrationId"] = alert.MigrationId
-	content["Volumes"] = alert.Volumes
-	content["MigrationDate"] = alert.MigrationDate.Format(time.RFC822)
-
-	mail := models.MailData{
-		To:       []string{"test@test.com"},
-		From:     appConfig.Properties.FromAddress,
-		Subject:  "Migration Request Created",
-		Content:  content,
-		Template: appConfig.Properties.DefaultTemplate,
-	}
-
-	appConfig.MailChannel <- mail
+	sendMail(alert, &models.Job{
+		TemplateName: appConfig.Properties.DefaultTemplate,
+		MailSubject:  "Migration Request Created",
+	})
 
 	return data, nil
 }
@@ -197,6 +193,7 @@ func CreateJob(job *models.Job) ([]byte, error) {
 }
 
 // StartSecondaryCron starts secondary jobs based on entries from jobs table
+// To DO - this has to be made synchronous and thread safe
 func StartSecondaryCron() {
 	var secondaryCrons = appConfig.CronJobs
 
@@ -223,19 +220,18 @@ func StartSecondaryCron() {
 	for _, eachJob := range jobList {
 		name := eachJob.CronExpression
 		jobMap[name] = eachJob
-		secondaryCrons.AddFunc(name, func() { sendScheduledAlert(eachJob) })
+		secondaryCrons.AddFunc(name, func() { setScheduledAlerts(eachJob) })
 		appConfig.InfoLog.Println("Now adding cron - ", eachJob.Comments)
 	}
 	secondaryCrons.Start()
-	appConfig.InfoLog.Println("Full Entries reflecting DB is ", secondaryCrons.Entries())
+	appConfig.InfoLog.Println("Job schedule as seen in DB are ", secondaryCrons.Entries())
 
 	//set application wide config, this may be made available as part of API to update at real time and should be made thread safe
 	appConfig.CronJobs = secondaryCrons
 	appConfig.JobMap = jobMap
-
 }
 
-func sendScheduledAlert(job *models.Job) {
+func setScheduledAlerts(job *models.Job) {
 	appConfig.InfoLog.Printf("Alert: %s at %s\n", job.Comments, time.Now().Format(time.RFC1123))
 
 	now := time.Now()
@@ -250,8 +246,8 @@ func sendScheduledAlert(job *models.Job) {
 
 	filter := bson.M{
 		"migrationdate": bson.M{
-			"$gte": currentDate.AddDate(0, 0, int(job.FromDate)),
-			"$lt":  currentDate.AddDate(0, 0, int(job.ToDate)),
+			"$gte": currentDate.AddDate(0, 0, int(job.FromDay)),
+			"$lt":  currentDate.AddDate(0, 0, int(job.ToDay)),
 		},
 	}
 
@@ -260,11 +256,30 @@ func sendScheduledAlert(job *models.Job) {
 		appConfig.ErrorLog.Println(err)
 		return
 	}
-
 	sendMails(alerts, job)
-
 }
 
 func sendMails(alerts []*models.Alert, job *models.Job) {
+	for _, alert := range alerts {
+		sendMail(alert, job)
+	}
+}
 
+// sendMail Takes alert object and construct a maildata object and sends mail
+func sendMail(alert *models.Alert, job *models.Job) {
+
+	content := make(map[string]interface{})
+	content["MigrationId"] = alert.MigrationId
+	content["Volumes"] = alert.Volumes
+	content["MigrationDate"] = alert.MigrationDate.Format(time.RFC822)
+
+	mail := models.MailData{
+		To:       []string{"test@test.com"},
+		From:     appConfig.Properties.FromAddress,
+		Subject:  job.MailSubject,
+		Content:  content,
+		Template: job.TemplateName,
+	}
+
+	appConfig.MailChannel <- mail
 }

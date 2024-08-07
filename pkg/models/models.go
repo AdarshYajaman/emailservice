@@ -34,9 +34,10 @@ type Job struct {
 	IndexId        primitive.ObjectID `bson:"_id"`
 	CronExpression string
 	Comments       string
-	FromDate       uint8
-	ToDate         uint8
+	FromDay        uint8
+	ToDay          uint8
 	TemplateName   string
 	AddedBy        string
 	CreatedAt      time.Time
+	MailSubject    string
 }

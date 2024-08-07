@@ -31,10 +31,11 @@ POST http://localhost:8080/api/job
 content-type: application/json
 
 {
-  "CronExpression":"*/8 * * * *",
-  "Comments": "Alert every 8 minute", 
-  "FromDate":1,
-  "ToDate": 6,
+  "CronExpression":"*/1 * * * *",
+  "Comments": "Alert every 1 minute", 
+  "FromDay":1,
+  "ToDay": 6,
   "TemplateName": "simple.page.tmpl",
-  "AddedBy":"ab30342"
+  "AddedBy":"ab30342",
+  "MailSubject": "Your migration is approaching"
 }
