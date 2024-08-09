@@ -36,15 +36,16 @@ func main() {
 
 	router.HandleFunc("GET /api/alerts", handler.GetAlerts)
 	router.HandleFunc("POST /api/alert", handler.CreateAlert)
-	router.HandleFunc("PATCH /api/alert", handler.UpdateAlert)
-	router.HandleFunc("DELETE /api/alert", handler.DeleteAlert)
+	router.HandleFunc("PATCH /api/alert/{id}", handler.UpdateAlert)
+	router.HandleFunc("DELETE /api/alert/{id}", handler.DeleteAlert)
 
 	router.HandleFunc("POST /api/job", handler.CreateJob)
 	router.HandleFunc("GET /api/jobs", handler.GetJobs)
-	// router.HandleFunc("PATCH /api/job", handler.UpdateAlert)
-	// router.HandleFunc("DELETE /api/job", handler.DeleteAlert)
+	router.HandleFunc("PATCH /api/job/{id}", handler.UpdateJob)
+	router.HandleFunc("DELETE /api/job/{id}", handler.DeleteJob)
 
-	//TODO - API endpoint needed to monitor the mail channel capacity and size
+	//TODO - API endpoint to monitor mail channel capacity and size
+	//TODO - API endpoint to update job
 
 	http.ListenAndServe(":8080", router)
 }
@@ -81,13 +82,16 @@ func configure() error {
 	alertRepo := repository.NewAlertRepository(client.Database(props.MongoDBName), props.AlertCollectionName)
 	jobRepo := repository.NewJobRepository(client.Database(props.MongoDBName), props.JobCollectionName)
 
+	// alertRepo := repository.NewCustomRepository[*models.Alert](client.Database(props.MongoDBName), props.AlertCollectionName)
+	// jobRepo := repository.NewCustomRepository[*models.Job](client.Database(props.MongoDBName), props.AlertCollectionName)
+
 	appConfig = config.AppWideConfig{
 		Properties:        props,
 		MailChannel:       mailChan,
 		MailTemplateCache: mailTemplates,
 		MongoClient:       client,
-		AlertRepo:         alertRepo,
-		JobRepo:           jobRepo,
+		AlertRepo:         *alertRepo,
+		JobRepo:           *jobRepo,
 		InfoLog:           infoLog,
 		ErrorLog:          errLog,
 	}

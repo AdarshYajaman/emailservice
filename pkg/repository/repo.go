@@ -14,8 +14,8 @@ type Repository interface {
 	Create(ctx context.Context, alert *models.Alert) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*models.Alert, error)
 	Update(ctx context.Context, alert *models.Alert) error
-	Delete(ctx context.Context, id primitive.ObjectID) error
-	List(ctx context.Context) ([]*models.Alert, error)
+	Delete(ctx context.Context, id primitive.ObjectID) (int64, error)
+	List(ctx context.Context, filter interface{}) ([]*models.Alert, error)
 }
 
 type AlertRepository struct {
@@ -44,14 +44,14 @@ func (alertRepo *AlertRepository) Update(ctx context.Context, alert *models.Aler
 		ctx,
 		bson.M{"_id": alert.IndexId},
 		bson.M{"$set": alert},
-		options.Update().SetUpsert(true),
+		options.Update().SetUpsert(false),
 	)
 	return err
 }
 
-func (alertRepo *AlertRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
-	_, err := alertRepo.collection.DeleteOne(ctx, bson.M{"_id": id})
-	return err
+func (alertRepo *AlertRepository) Delete(ctx context.Context, id primitive.ObjectID) (int64, error) {
+	result, err := alertRepo.collection.DeleteOne(ctx, bson.M{"_id": id})
+	return result.DeletedCount, err
 }
 
 func (alertRepo *AlertRepository) List(ctx context.Context, filter interface{}) ([]*models.Alert, error) {
@@ -66,12 +66,12 @@ func (alertRepo *AlertRepository) List(ctx context.Context, filter interface{}) 
 	return alerts, nil
 }
 
-type Jepository interface {
+type Jrepository interface {
 	Create(ctx context.Context, job *models.Job) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*models.Job, error)
 	Update(ctx context.Context, job *models.Job) error
-	Delete(ctx context.Context, id primitive.ObjectID) error
-	List(ctx context.Context) ([]*models.Job, error)
+	Delete(ctx context.Context, id primitive.ObjectID) (int64, error)
+	List(ctx context.Context, filter interface{}) ([]*models.Job, error)
 }
 
 type JobRepository struct {
@@ -100,14 +100,14 @@ func (jobRepo *JobRepository) Update(ctx context.Context, job *models.Job) error
 		ctx,
 		bson.M{"_id": job.IndexId},
 		bson.M{"$set": job},
-		options.Update().SetUpsert(true),
+		options.Update().SetUpsert(false),
 	)
 	return err
 }
 
-func (jobRepo *JobRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
-	_, err := jobRepo.collection.DeleteOne(ctx, bson.M{"_id": id})
-	return err
+func (jobRepo *JobRepository) Delete(ctx context.Context, id primitive.ObjectID) (int64, error) {
+	result, err := jobRepo.collection.DeleteOne(ctx, bson.M{"_id": id})
+	return result.DeletedCount, err
 }
 
 func (jobRepo *JobRepository) List(ctx context.Context, filter interface{}) ([]*models.Job, error) {

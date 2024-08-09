@@ -107,8 +107,8 @@ func fetchMailBody(m models.MailData) (string, error) {
 func CreateAlert(alert *models.Alert) ([]byte, error) {
 
 	//set defaults
-	alert.AlertType = "email"
 	alert.IndexId = primitive.NewObjectID()
+	alert.AlertType = "email"
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -143,6 +143,43 @@ func GetAlerts(filter interface{}) ([]byte, []*models.Alert, error) {
 	return data, list, nil
 }
 
+func GetAlertById(id primitive.ObjectID) (*models.Alert, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	alert, err := appConfig.AlertRepo.GetByID(ctx, id)
+	if err != nil {
+		appConfig.ErrorLog.Println(err)
+		return nil, err
+	}
+	return alert, nil
+}
+
+func UpdateAlert(updates *models.Alert) (*models.Alert, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	// err := appConfig.AlertRepo.Update(ctx, updates, updates.IndexId)
+	err := appConfig.AlertRepo.Update(ctx, updates)
+	if err != nil {
+		appConfig.ErrorLog.Println(err)
+		return nil, err
+	}
+	return GetAlertById(updates.IndexId)
+}
+
+func DeleteAlert(id primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	deleteCount, err := appConfig.AlertRepo.Delete(ctx, id)
+	if err != nil {
+		appConfig.ErrorLog.Println(err)
+		return err
+	}
+	if deleteCount == 0 {
+		return errors.New("unable to find the Alert Id")
+	}
+	return nil
+}
+
 func ServerError(w http.ResponseWriter, err error) {
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
 	appConfig.ErrorLog.Output(2, trace)
@@ -150,12 +187,12 @@ func ServerError(w http.ResponseWriter, err error) {
 }
 
 func ClientError(w http.ResponseWriter, status int, err error) {
-	appConfig.ErrorLog.Output(2, err.Error())
+	appConfig.ErrorLog.Output(3, err.Error())
 	http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
 }
 
 func NoDataFound(w http.ResponseWriter) {
-	http.Error(w, "No data found for this range", http.StatusNoContent)
+	http.Error(w, "No data found", http.StatusNoContent)
 }
 
 func GetJobs(filter interface{}) ([]byte, []*models.Job, error) {
@@ -163,10 +200,12 @@ func GetJobs(filter interface{}) ([]byte, []*models.Job, error) {
 	defer cancel()
 	list, err := appConfig.JobRepo.List(ctx, filter)
 	if err != nil {
+		appConfig.ErrorLog.Println(err)
 		return nil, nil, err
 	}
 	data, err := json.Marshal(list)
 	if err != nil {
+		appConfig.ErrorLog.Println(err)
 		return nil, nil, err
 	}
 	return data, list, nil
@@ -181,15 +220,52 @@ func CreateJob(job *models.Job) ([]byte, error) {
 	defer cancel()
 	err := appConfig.JobRepo.Create(ctx, job)
 	if err != nil {
+		appConfig.ErrorLog.Println(err)
 		return nil, err
 	}
-
 	data, err := json.Marshal(job)
 	if err != nil {
+		appConfig.ErrorLog.Println(err)
 		return nil, err
 	}
-
 	return data, nil
+}
+
+func GetJobById(id primitive.ObjectID) (*models.Job, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	job, err := appConfig.JobRepo.GetByID(ctx, id)
+	if err != nil {
+		appConfig.ErrorLog.Println(err)
+		return nil, err
+	}
+	return job, nil
+}
+
+func UpdateJob(updates *models.Job) (*models.Job, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	// err := appConfig.JobRepo.Update(ctx, updates, updates.IndexId)
+	err := appConfig.JobRepo.Update(ctx, updates)
+	if err != nil {
+		appConfig.ErrorLog.Println(err)
+		return nil, err
+	}
+	return GetJobById(updates.IndexId)
+}
+
+func DeleteJob(id primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	deleteCount, err := appConfig.JobRepo.Delete(ctx, id)
+	if err != nil {
+		appConfig.ErrorLog.Println(err)
+		return err
+	}
+	if deleteCount == 0 {
+		return errors.New("unable to find the Job Id")
+	}
+	return nil
 }
 
 // StartSecondaryCron starts secondary jobs based on entries from jobs table
@@ -237,17 +313,17 @@ func setScheduledAlerts(job *models.Job) {
 	now := time.Now()
 	currentDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	// filter := bson.M{
-	// 	"migrationdate": bson.M{
+	// 	"migrationDate": bson.M{
 	// 		"$gte": currentDate.AddDate(0, 0, int(job.FromDate)),
 	// 		"$lt":  currentDate.AddDate(0, 0, int(job.ToDate)),
 	// 	},
-	// 	"isreadytosend": true,
+	// 	"isReadyToSend": true,
 	// }
 
 	filter := bson.M{
-		"migrationdate": bson.M{
-			"$gte": currentDate.AddDate(0, 0, int(job.FromDay)),
-			"$lt":  currentDate.AddDate(0, 0, int(job.ToDay)),
+		"migrationDate": bson.M{
+			"$gte": currentDate.AddDate(0, 0, int(job.StartDate)),
+			"$lt":  currentDate.AddDate(0, 0, int(job.EndDate)),
 		},
 	}
 
@@ -274,7 +350,7 @@ func sendMail(alert *models.Alert, job *models.Job) {
 	content["MigrationDate"] = alert.MigrationDate.Format(time.RFC822)
 
 	mail := models.MailData{
-		To:       []string{"test@test.com"},
+		To:       alert.DistributionList,
 		From:     appConfig.Properties.FromAddress,
 		Subject:  job.MailSubject,
 		Content:  content,

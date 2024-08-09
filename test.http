@@ -6,24 +6,30 @@ content-type: application/json
 
 {
   "migrationId":"{{$guid}}",
-  "volumes": ["vol1","vol2","vol3"], 
-  "Alerttype":"mail",
-  "MigrationDate": "{{$datetime 'YYYY-MM-DD' 2 d}}T00:00:00Z",
-  "isreadytosend": true
+  "volumes": ["vol1","vol2"], 
+  "alertType":"email",
+  "migrationDate": "{{$datetime 'YYYY-MM-DD' 4 d}}T00:00:00Z",
+  "isReadyToSend": true,
+  "distributionList": ["ab30342@citi.com"]
 }
 
 ###
-PATCH http://localhost:8080/api/alert
+PATCH http://localhost:8080/api/alert/66b5c56f2e7f5e82e5954167
+Content-Type: application/json
 
+{
+   "volumes": ["vol1","vol6"],   
+  "migrationDate": "{{$datetime 'YYYY-MM-DD' 2 d}}T00:00:00Z"  
+}
 
 ###
-DELETE http://localhost:8080/api/alert
+DELETE http://localhost:8080/api/alert/66b5c56f2e7f5e82e5954167
 
+
+#######################################################################################################################################
 
 ####
 GET http://localhost:8080/api/jobs
-
-
 
 #####
 
@@ -31,11 +37,22 @@ POST http://localhost:8080/api/job
 content-type: application/json
 
 {
-  "CronExpression":"*/1 * * * *",
-  "Comments": "Alert every 1 minute", 
-  "FromDay":1,
-  "ToDay": 6,
-  "TemplateName": "simple.page.tmpl",
-  "AddedBy":"ab30342",
-  "MailSubject": "Your migration is approaching"
+  "cronExpression":"*/1 * * * *",
+  "comments": "Alert every 1 minute", 
+  "startDate":1,
+  "endDate": 6,
+  "templateName": "simple.page.tmpl",
+  "addedBy":"ab30342",
+  "mailSubject": "Your migration is approaching"
 }
+
+###
+PATCH http://localhost:8080/api/job/66b5c8edaa37514b30aee9b4
+Content-Type: application/json
+
+{  
+  "addedBy":"Adarsh"
+}
+
+###
+DELETE http://localhost:8080/api/job/66b5c8edaa37514b30aee9b4
