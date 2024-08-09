@@ -40,11 +40,11 @@ type AppWideConfig struct {
 	MailChannel       chan models.MailData
 	MailTemplateCache map[string]*template.Template
 	MongoClient       *mongo.Client
-	AlertRepo         repository.AlertRepository
-	JobRepo           repository.JobRepository
+	// AlertRepo         repository.AlertRepository
+	// JobRepo           repository.JobRepository
 
-	// AlertRepo         repository.Repository[*models.Alert]
-	// JobRepo           repository.Repository[*models.Job]
+	AlertRepo repository.Repository[*models.Alert]
+	JobRepo   repository.Repository[*models.Job]
 
 	CronJobs *cron.Cron
 	JobMap   map[string]*models.Job

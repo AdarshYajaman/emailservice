@@ -14,7 +14,7 @@ content-type: application/json
 }
 
 ###
-PATCH http://localhost:8080/api/alert/66b5c56f2e7f5e82e5954167
+PATCH http://localhost:8080/api/alert/66b5d084d10e0c734d9f5937
 Content-Type: application/json
 
 {
@@ -47,7 +47,7 @@ content-type: application/json
 }
 
 ###
-PATCH http://localhost:8080/api/job/66b5c8edaa37514b30aee9b4
+PATCH http://localhost:8080/api/job/66b5d0c7d10e0c734d9f5939
 Content-Type: application/json
 
 {  
@@ -55,4 +55,4 @@ Content-Type: application/json
 }
 
 ###
-DELETE http://localhost:8080/api/job/66b5c8edaa37514b30aee9b4
+DELETE http://localhost:8080/api/job/66b5d0dfd10e0c734d9f593b

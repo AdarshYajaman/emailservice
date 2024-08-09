@@ -79,19 +79,19 @@ func configure() error {
 	}
 
 	//setup repository
-	alertRepo := repository.NewAlertRepository(client.Database(props.MongoDBName), props.AlertCollectionName)
-	jobRepo := repository.NewJobRepository(client.Database(props.MongoDBName), props.JobCollectionName)
+	// alertRepo := repository.NewAlertRepository(client.Database(props.MongoDBName), props.AlertCollectionName)
+	// jobRepo := repository.NewJobRepository(client.Database(props.MongoDBName), props.JobCollectionName)
 
-	// alertRepo := repository.NewCustomRepository[*models.Alert](client.Database(props.MongoDBName), props.AlertCollectionName)
-	// jobRepo := repository.NewCustomRepository[*models.Job](client.Database(props.MongoDBName), props.AlertCollectionName)
+	alertRepo := repository.NewCustomRepository[*models.Alert](client.Database(props.MongoDBName), props.AlertCollectionName)
+	jobRepo := repository.NewCustomRepository[*models.Job](client.Database(props.MongoDBName), props.JobCollectionName)
 
 	appConfig = config.AppWideConfig{
 		Properties:        props,
 		MailChannel:       mailChan,
 		MailTemplateCache: mailTemplates,
 		MongoClient:       client,
-		AlertRepo:         *alertRepo,
-		JobRepo:           *jobRepo,
+		AlertRepo:         alertRepo,
+		JobRepo:           jobRepo,
 		InfoLog:           infoLog,
 		ErrorLog:          errLog,
 	}

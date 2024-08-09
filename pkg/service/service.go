@@ -157,8 +157,8 @@ func GetAlertById(id primitive.ObjectID) (*models.Alert, error) {
 func UpdateAlert(updates *models.Alert) (*models.Alert, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	// err := appConfig.AlertRepo.Update(ctx, updates, updates.IndexId)
-	err := appConfig.AlertRepo.Update(ctx, updates)
+	err := appConfig.AlertRepo.Update(ctx, updates, updates.IndexId)
+	// err := appConfig.AlertRepo.Update(ctx, updates)
 	if err != nil {
 		appConfig.ErrorLog.Println(err)
 		return nil, err
@@ -245,8 +245,8 @@ func GetJobById(id primitive.ObjectID) (*models.Job, error) {
 func UpdateJob(updates *models.Job) (*models.Job, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	// err := appConfig.JobRepo.Update(ctx, updates, updates.IndexId)
-	err := appConfig.JobRepo.Update(ctx, updates)
+	err := appConfig.JobRepo.Update(ctx, updates, updates.IndexId)
+	// err := appConfig.JobRepo.Update(ctx, updates)
 	if err != nil {
 		appConfig.ErrorLog.Println(err)
 		return nil, err
@@ -297,7 +297,7 @@ func StartSecondaryCron() {
 		name := eachJob.CronExpression
 		jobMap[name] = eachJob
 		secondaryCrons.AddFunc(name, func() { setScheduledAlerts(eachJob) })
-		appConfig.InfoLog.Println("Now adding cron - ", eachJob.Comments)
+		appConfig.InfoLog.Println("Now adding cron - ", eachJob.Comments, eachJob)
 	}
 	secondaryCrons.Start()
 	appConfig.InfoLog.Println("Job schedule as seen in DB are ", secondaryCrons.Entries())
