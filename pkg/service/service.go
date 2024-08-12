@@ -1,8 +1,6 @@
 package service
 
 import (
-	"103-EmailService/pkg/config"
-	"103-EmailService/pkg/models"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -13,6 +11,9 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"citi.com/179563_genesis_mail/pkg/config"
+	"citi.com/179563_genesis_mail/pkg/models"
 
 	"github.com/robfig/cron/v3"
 	"go.mongodb.org/mongo-driver/bson"
@@ -110,7 +111,7 @@ func CreateAlert(alert *models.Alert) ([]byte, error) {
 	alert.IndexId = primitive.NewObjectID()
 	alert.AlertType = "email"
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
 	err := appConfig.AlertRepo.Create(ctx, alert)
 	if err != nil {
@@ -130,7 +131,7 @@ func CreateAlert(alert *models.Alert) ([]byte, error) {
 }
 
 func GetAlerts(filter interface{}) ([]byte, []*models.Alert, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
 	list, err := appConfig.AlertRepo.List(ctx, filter)
 	if err != nil {
@@ -144,7 +145,7 @@ func GetAlerts(filter interface{}) ([]byte, []*models.Alert, error) {
 }
 
 func GetAlertById(id primitive.ObjectID) (*models.Alert, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
 	alert, err := appConfig.AlertRepo.GetByID(ctx, id)
 	if err != nil {
@@ -155,7 +156,7 @@ func GetAlertById(id primitive.ObjectID) (*models.Alert, error) {
 }
 
 func UpdateAlert(updates *models.Alert) (*models.Alert, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
 	err := appConfig.AlertRepo.Update(ctx, updates, updates.IndexId)
 	// err := appConfig.AlertRepo.Update(ctx, updates)
@@ -167,7 +168,7 @@ func UpdateAlert(updates *models.Alert) (*models.Alert, error) {
 }
 
 func DeleteAlert(id primitive.ObjectID) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
 	deleteCount, err := appConfig.AlertRepo.Delete(ctx, id)
 	if err != nil {
@@ -183,20 +184,35 @@ func DeleteAlert(id primitive.ObjectID) error {
 func ServerError(w http.ResponseWriter, err error) {
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
 	appConfig.ErrorLog.Output(2, trace)
-	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	w.WriteHeader(http.StatusInternalServerError)
+	errResponse := models.ErrorResponse{
+		ErrorMessage: err.Error(),
+	}
+	json.NewEncoder(w).Encode(errResponse)
 }
 
 func ClientError(w http.ResponseWriter, status int, err error) {
+
 	appConfig.ErrorLog.Output(3, err.Error())
-	http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
+	w.WriteHeader(http.StatusBadRequest)
+	errResponse := models.ErrorResponse{
+		ErrorMessage: err.Error(),
+	}
+	json.NewEncoder(w).Encode(errResponse)
+	//http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
 }
 
 func NoDataFound(w http.ResponseWriter) {
-	http.Error(w, "No data found", http.StatusNoContent)
+	w.WriteHeader(http.StatusNoContent)
+	errResponse := models.ErrorResponse{
+		ErrorMessage: "No data found",
+	}
+	json.NewEncoder(w).Encode(errResponse)
+	// http.Error(w, "No data found", http.StatusNoContent)
 }
 
 func GetJobs(filter interface{}) ([]byte, []*models.Job, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
 	list, err := appConfig.JobRepo.List(ctx, filter)
 	if err != nil {
@@ -216,7 +232,7 @@ func CreateJob(job *models.Job) ([]byte, error) {
 	job.CreatedAt = time.Now()
 	//To do - Data validation and check for date range
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
 	err := appConfig.JobRepo.Create(ctx, job)
 	if err != nil {
@@ -232,7 +248,7 @@ func CreateJob(job *models.Job) ([]byte, error) {
 }
 
 func GetJobById(id primitive.ObjectID) (*models.Job, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
 	job, err := appConfig.JobRepo.GetByID(ctx, id)
 	if err != nil {
@@ -243,7 +259,7 @@ func GetJobById(id primitive.ObjectID) (*models.Job, error) {
 }
 
 func UpdateJob(updates *models.Job) (*models.Job, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
 	err := appConfig.JobRepo.Update(ctx, updates, updates.IndexId)
 	// err := appConfig.JobRepo.Update(ctx, updates)
@@ -255,7 +271,7 @@ func UpdateJob(updates *models.Job) (*models.Job, error) {
 }
 
 func DeleteJob(id primitive.ObjectID) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
 	deleteCount, err := appConfig.JobRepo.Delete(ctx, id)
 	if err != nil {
@@ -341,7 +357,7 @@ func sendMails(alerts []*models.Alert, job *models.Job) {
 	}
 }
 
-// sendMail Takes alert object and construct a maildata object and sends mail
+// sendMail Takes alert object and constructs a maildata object and sends mail
 func sendMail(alert *models.Alert, job *models.Job) {
 
 	content := make(map[string]interface{})

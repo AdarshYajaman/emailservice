@@ -1,4 +1,4 @@
-module 103-EmailService
+module citi.com/179563_genesis_mail
 
 go 1.22.5
 

@@ -1,21 +1,22 @@
 package config
 
 import (
-	"103-EmailService/pkg/models"
-	"103-EmailService/pkg/repository"
-	"fmt"
 	"log"
 	"text/template"
 
+	"citi.com/179563_genesis_mail/pkg/models"
+	"citi.com/179563_genesis_mail/pkg/repository"
+
 	"github.com/robfig/cron/v3"
-	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type ApplicationProperties struct {
+	APIPort             string `mapstructure:"api_port"`
+	APITimeOut          int    `mapstructure:"api_timeOutInSeconds"`
 	SMTPHost            string `mapstructure:"smtp_host"`
 	SMTPPort            string `mapstructure:"smtp_port"`
-	SMTPTimeOut         string `mapstructure:"smtp_timeout"`
+	SMTPTimeOut         string `mapstructure:"smtp_timeOutInSeconds"`
 	SMTPChannelBufSize  int    `mapstructure:"smtp_channelbufsize"`
 	SMTPWorkers         int    `mapstructure:"smtp_workers"`
 	DefaultJobRefresh   string `mapstructure:"default_jobrefresh"`
@@ -23,7 +24,7 @@ type ApplicationProperties struct {
 	FromAddress         string `mapstructure:"default_fromaddress"`
 	MongoURL            string `mapstructure:"mongo_url"`
 	MongoDBName         string `mapstructure:"mongo_dbname"`
-	MongoTimeout        string `mapstructure:"mongo_timeout"`
+	MongoTimeout        int    `mapstructure:"mongo_timeOutInSeconds"`
 	AlertCollectionName string `mapstructure:"mongo_alertcollectionname"`
 	JobCollectionName   string `mapstructure:"mongo_jobcollectionname"`
 }
@@ -48,22 +49,4 @@ type AppWideConfig struct {
 
 	CronJobs *cron.Cron
 	JobMap   map[string]*models.Job
-}
-
-func ReadConfigFile() *ApplicationProperties {
-	appProps := ApplicationProperties{}
-
-	viper.SetConfigName("application")
-	viper.AddConfigPath("./pkg/config/")
-	viper.SetConfigType("properties")
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %w", err))
-	}
-	err = viper.Unmarshal(&appProps)
-	if err != nil {
-		log.Fatalf("unable to decode into struct, %v", err)
-	}
-	return &appProps
-
 }

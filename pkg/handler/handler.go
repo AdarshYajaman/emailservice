@@ -1,19 +1,22 @@
 package handler
 
 import (
-	"103-EmailService/pkg/models"
-	"103-EmailService/pkg/service"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
 	"time"
 
+	"citi.com/179563_genesis_mail/pkg/models"
+	"citi.com/179563_genesis_mail/pkg/service"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// CreateAlert - creates an alert in mongo and sends email notification
 func CreateAlert(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	var alertRequest models.Alert
 	decoder := json.NewDecoder(req.Body)
 	decoder.DisallowUnknownFields()
@@ -32,10 +35,33 @@ func CreateAlert(w http.ResponseWriter, req *http.Request) {
 		service.ServerError(w, err)
 		return
 	}
-	// fmt.Fprintf(w, "Executing POST on Alerts for %s %s %s", alertRequest.MigrationId, alertRequest.Volumes, alertRequest.AlertType)
 }
 
+func GetAlert(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	alertId := strings.TrimPrefix(req.URL.Path, "/api/alert/")
+	objId, err := primitive.ObjectIDFromHex(alertId)
+	if err != nil {
+		service.ClientError(w, http.StatusNotFound, err)
+		return
+	}
+	alert, err := service.GetAlertById(objId)
+	if err != nil {
+		service.ServerError(w, err)
+		return
+	}
+	data, err := json.Marshal(alert)
+	if err != nil {
+		service.ServerError(w, err)
+		return
+	}
+	w.Write(data)
+}
+
+// GetAlerts - gets list of all alerts based on a date range
+// TODO add date filter in the URL, if not specified use default
 func GetAlerts(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	now := time.Now()
 	currentDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	filter := bson.M{
@@ -57,10 +83,11 @@ func GetAlerts(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// UpdateAlert - updates an existing alert
 func UpdateAlert(w http.ResponseWriter, req *http.Request) {
-
-	migrationId := strings.TrimPrefix(req.URL.Path, "/api/alert/")
-	objId, err := primitive.ObjectIDFromHex(migrationId)
+	w.Header().Set("Content-Type", "application/json")
+	alertId := strings.TrimPrefix(req.URL.Path, "/api/alert/")
+	objId, err := primitive.ObjectIDFromHex(alertId)
 	if err != nil {
 		service.ClientError(w, http.StatusNotFound, err)
 		return
@@ -86,7 +113,7 @@ func UpdateAlert(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//length of data will be 4 when date value is null
+	//length of data will be 4 when data value is null - may be a duplicate
 	if len(data) == 4 {
 		service.NoDataFound(w)
 		return
@@ -95,6 +122,7 @@ func UpdateAlert(w http.ResponseWriter, req *http.Request) {
 }
 
 func DeleteAlert(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	alertId := strings.TrimPrefix(req.URL.Path, "/api/alert/")
 	objId, err := primitive.ObjectIDFromHex(alertId)
 	if err != nil {
@@ -116,6 +144,7 @@ func DeleteAlert(w http.ResponseWriter, req *http.Request) {
 }
 
 func CreateJob(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	var jobRequest models.Job
 	decoder := json.NewDecoder(req.Body)
 	decoder.DisallowUnknownFields()
@@ -138,6 +167,7 @@ func CreateJob(w http.ResponseWriter, req *http.Request) {
 }
 
 func GetJobs(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	filter := bson.M{}
 	data, _, err := service.GetJobs(filter)
 	if err != nil {
@@ -151,8 +181,29 @@ func GetJobs(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func UpdateJob(w http.ResponseWriter, req *http.Request) {
+func GetJob(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	jobId := strings.TrimPrefix(req.URL.Path, "/api/job/")
+	objId, err := primitive.ObjectIDFromHex(jobId)
+	if err != nil {
+		service.ClientError(w, http.StatusNotFound, err)
+		return
+	}
+	job, err := service.GetJobById(objId)
+	if err != nil {
+		service.ServerError(w, err)
+		return
+	}
+	data, err := json.Marshal(job)
+	if err != nil {
+		service.ServerError(w, err)
+		return
+	}
+	w.Write(data)
+}
 
+func UpdateJob(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	jobId := strings.TrimPrefix(req.URL.Path, "/api/job/")
 	objId, err := primitive.ObjectIDFromHex(jobId)
 	if err != nil {
@@ -192,6 +243,7 @@ func UpdateJob(w http.ResponseWriter, req *http.Request) {
 }
 
 func DeleteJob(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	jobId := strings.TrimPrefix(req.URL.Path, "/api/job/")
 	objId, err := primitive.ObjectIDFromHex(jobId)
 	if err != nil {

@@ -1,38 +1,30 @@
 package helpers
 
 import (
-	"bufio"
-	"os"
+	"fmt"
+	"log"
 	"path/filepath"
-	"strings"
 	"text/template"
+
+	"citi.com/179563_genesis_mail/pkg/config"
+	"github.com/spf13/viper"
 )
 
-func ReadPropertiesFile(filePath string) (map[string]string, error) {
-	file, err := os.Open(filePath)
+func ReadConfigFile() *config.ApplicationProperties {
+	appProps := config.ApplicationProperties{}
+
+	viper.SetConfigName("application")
+	viper.AddConfigPath("./pkg/config/")
+	viper.SetConfigType("properties")
+	err := viper.ReadInConfig()
 	if err != nil {
-		return nil, err
+		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
-	defer file.Close()
-
-	properties := make(map[string]string)
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) == 2 {
-			key := strings.TrimSpace(parts[0])
-			value := strings.TrimSpace(parts[1])
-			properties[key] = value
-		}
+	err = viper.Unmarshal(&appProps)
+	if err != nil {
+		log.Fatalf("unable to decode into struct, %v", err)
 	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return properties, nil
+	return &appProps
 
 }
 

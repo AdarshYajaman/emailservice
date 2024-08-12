@@ -1,6 +1,10 @@
+# @name alerts
 GET http://localhost:8080/api/alerts
 
+@alertId = {{alerts.response.body.1._id}}
+
 ###
+# @name createAlert
 POST http://localhost:8080/api/alert
 content-type: application/json
 
@@ -14,7 +18,15 @@ content-type: application/json
 }
 
 ###
-PATCH http://localhost:8080/api/alert/66b5d084d10e0c734d9f5937
+
+@alertId = {{createAlert.response.body.$._id}}
+
+###
+GET http://localhost:8080/api/alert/{{alertId}}
+
+
+####
+PATCH http://localhost:8080/api/alert/{{alertId}}
 Content-Type: application/json
 
 {
@@ -23,16 +35,19 @@ Content-Type: application/json
 }
 
 ###
-DELETE http://localhost:8080/api/alert/66b5c56f2e7f5e82e5954167
+DELETE http://localhost:8080/api/alert/{{alertId}}
 
 
 #######################################################################################################################################
 
+# @name jobs
 ####
 GET http://localhost:8080/api/jobs
 
-#####
+@jobId = {{jobs.response.body.1._id}}
 
+#####
+# @name createJob
 POST http://localhost:8080/api/job
 content-type: application/json
 
@@ -41,18 +56,24 @@ content-type: application/json
   "comments": "Alert every 1 minute", 
   "startDate":1,
   "endDate": 6,
-  "templateName": "simple.page.tmpl",
+  "templateName": "warning.page.tmpl",
   "addedBy":"ab30342",
   "mailSubject": "Your migration is approaching"
 }
 
+@jobId = {{createJob.response.body.$._id}}
+
+
 ###
-PATCH http://localhost:8080/api/job/66b5d0c7d10e0c734d9f5939
+GET http://localhost:8080/api/job/{{jobId}}
+
+###
+PATCH http://localhost:8080/api/job/{{jobId}}
 Content-Type: application/json
 
 {  
-  "addedBy":"Adarsh"
+  "addedBy":"ab30342"
 }
 
 ###
-DELETE http://localhost:8080/api/job/66b5d0dfd10e0c734d9f593b
+DELETE http://localhost:8080/api/job/{{jobId}}

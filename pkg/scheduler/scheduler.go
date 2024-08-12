@@ -1,7 +1,7 @@
 package scheduler
 
 import (
-	"103-EmailService/pkg/service"
+	"citi.com/179563_genesis_mail/pkg/service"
 
 	"github.com/robfig/cron/v3"
 )

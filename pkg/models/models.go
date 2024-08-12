@@ -40,3 +40,7 @@ type Job struct {
 	CreatedAt      time.Time          `json:"createdAt,omitempty" bson:"createdAt,omitempty"`
 	MailSubject    string             `json:"mailSubject,omitempty" bson:"mailSubject,omitempty"`
 }
+
+type ErrorResponse struct {
+	ErrorMessage string
+}

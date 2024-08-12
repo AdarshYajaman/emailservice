@@ -1,17 +1,19 @@
 package main
 
 import (
-	"103-EmailService/pkg/config"
-	"103-EmailService/pkg/handler"
-	"103-EmailService/pkg/helpers"
-	"103-EmailService/pkg/models"
-	"103-EmailService/pkg/repository"
-	"103-EmailService/pkg/scheduler"
-	"103-EmailService/pkg/service"
 	"context"
 	"log"
 	"net/http"
 	"os"
+	"time"
+
+	"citi.com/179563_genesis_mail/pkg/config"
+	"citi.com/179563_genesis_mail/pkg/handler"
+	"citi.com/179563_genesis_mail/pkg/helpers"
+	"citi.com/179563_genesis_mail/pkg/models"
+	"citi.com/179563_genesis_mail/pkg/repository"
+	"citi.com/179563_genesis_mail/pkg/scheduler"
+	"citi.com/179563_genesis_mail/pkg/service"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -36,22 +38,31 @@ func main() {
 
 	router.HandleFunc("GET /api/alerts", handler.GetAlerts)
 	router.HandleFunc("POST /api/alert", handler.CreateAlert)
+	router.HandleFunc("GET /api/alert/{id}", handler.GetAlert)
 	router.HandleFunc("PATCH /api/alert/{id}", handler.UpdateAlert)
 	router.HandleFunc("DELETE /api/alert/{id}", handler.DeleteAlert)
 
-	router.HandleFunc("POST /api/job", handler.CreateJob)
 	router.HandleFunc("GET /api/jobs", handler.GetJobs)
+	router.HandleFunc("POST /api/job", handler.CreateJob)
+	router.HandleFunc("GET /api/job/{id}", handler.GetJob)
 	router.HandleFunc("PATCH /api/job/{id}", handler.UpdateJob)
 	router.HandleFunc("DELETE /api/job/{id}", handler.DeleteJob)
 
 	//TODO - API endpoint to monitor mail channel capacity and size
 	//TODO - API endpoint to update job
 
-	http.ListenAndServe(":8080", router)
+	srv := &http.Server{
+		ReadTimeout:  0 * time.Second,
+		WriteTimeout: time.Duration(appConfig.Properties.APITimeOut) * time.Second,
+		Addr:         ":" + appConfig.Properties.APIPort,
+		Handler:      router,
+	}
+	log.Println(srv.ListenAndServe())
+
+	//http.ListenAndServe(":"+appConfig.Properties.APIPort, router)
 }
 
 func configure() error {
-
 	// Create logger for writing information and error messages.
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime|log.Lshortfile)
 	errLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
@@ -60,7 +71,7 @@ func configure() error {
 		ErrorLog: errLog,
 	}
 
-	props := config.ReadConfigFile()
+	props := helpers.ReadConfigFile()
 	infoLog.Println("Contents of property file are ", props)
 
 	//create a mail channel
@@ -81,7 +92,6 @@ func configure() error {
 	//setup repository
 	// alertRepo := repository.NewAlertRepository(client.Database(props.MongoDBName), props.AlertCollectionName)
 	// jobRepo := repository.NewJobRepository(client.Database(props.MongoDBName), props.JobCollectionName)
-
 	alertRepo := repository.NewCustomRepository[*models.Alert](client.Database(props.MongoDBName), props.AlertCollectionName)
 	jobRepo := repository.NewCustomRepository[*models.Job](client.Database(props.MongoDBName), props.JobCollectionName)
 
