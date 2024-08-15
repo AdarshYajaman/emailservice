@@ -25,7 +25,6 @@ func ReadConfigFile() *config.ApplicationProperties {
 		log.Fatalf("unable to decode into struct, %v", err)
 	}
 	return &appProps
-
 }
 
 func CreateTemplateCache() (map[string]*template.Template, error) {

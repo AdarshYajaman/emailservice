@@ -46,7 +46,7 @@ func ListenToMessages() {
 		go func() {
 			for {
 				msg := <-appConfig.MailChannel
-				appConfig.InfoLog.Printf("Worker %d received %v\n", i, "test")
+				appConfig.InfoLog.Printf("Worker %d received %v\n", i, msg)
 				SendMailUsingDefault(msg)
 				//wg.Done()
 			}

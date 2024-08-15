@@ -58,8 +58,6 @@ func main() {
 		Handler:      router,
 	}
 	log.Println(srv.ListenAndServe())
-
-	//http.ListenAndServe(":"+appConfig.Properties.APIPort, router)
 }
 
 func configure() error {
@@ -81,12 +79,14 @@ func configure() error {
 	mailTemplates, err := helpers.CreateTemplateCache()
 	if err != nil {
 		errLog.Fatal("Cache cannot be created")
+		return err
 	}
 
 	//create mongo connection
 	client, err := createMongoConnection(props.MongoURL)
 	if err != nil {
 		errLog.Fatal("Unable to establish connection to mongo")
+		return err
 	}
 
 	//setup repository
