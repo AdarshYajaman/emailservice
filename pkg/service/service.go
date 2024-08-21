@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/smtp"
+	"reflect"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -122,11 +123,12 @@ func CreateAlert(alert *models.Alert) ([]byte, error) {
 		return nil, err
 	}
 
-	sendMail(alert, &models.Job{
-		TemplateName: appConfig.Properties.DefaultTemplate,
-		MailSubject:  "Migration Request Created",
-	})
+	tempJob := &models.Job{
+		TemplateName: appConfig.Properties.CreateAlertMailTemplate,
+		MailSubject:  appConfig.Properties.CreateAlertMailSubject,
+	}
 
+	sendMail(alert, tempJob, time.Time{})
 	return data, nil
 }
 
@@ -144,10 +146,10 @@ func GetAlerts(filter interface{}) ([]byte, []*models.Alert, error) {
 	return data, list, nil
 }
 
-func GetAlertById(id primitive.ObjectID) (*models.Alert, error) {
+func GetAlertById(migrationId string) (*models.Alert, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
-	alert, err := appConfig.AlertRepo.GetByID(ctx, id)
+	alert, err := appConfig.AlertRepo.GetByID(ctx, migrationId)
 	if err != nil {
 		appConfig.ErrorLog.Println(err)
 		return nil, err
@@ -155,22 +157,22 @@ func GetAlertById(id primitive.ObjectID) (*models.Alert, error) {
 	return alert, nil
 }
 
-func UpdateAlert(updates *models.Alert) (*models.Alert, error) {
+func UpdateAlert(updates *models.Alert, migrationId string) (*models.Alert, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
-	err := appConfig.AlertRepo.Update(ctx, updates, updates.IndexId)
-	// err := appConfig.AlertRepo.Update(ctx, updates)
+	// err := appConfig.AlertRepo.Update(ctx, updates, updates.IndexId)
+	err := appConfig.AlertRepo.Update(ctx, updates, migrationId)
 	if err != nil {
 		appConfig.ErrorLog.Println(err)
 		return nil, err
 	}
-	return GetAlertById(updates.IndexId)
+	return GetAlertById(migrationId)
 }
 
-func DeleteAlert(id primitive.ObjectID) error {
+func DeleteAlert(migrationId string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
-	deleteCount, err := appConfig.AlertRepo.Delete(ctx, id)
+	deleteCount, err := appConfig.AlertRepo.Delete(ctx, migrationId)
 	if err != nil {
 		appConfig.ErrorLog.Println(err)
 		return err
@@ -261,8 +263,8 @@ func GetJobById(id primitive.ObjectID) (*models.Job, error) {
 func UpdateJob(updates *models.Job) (*models.Job, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(appConfig.Properties.MongoTimeout)*time.Second)
 	defer cancel()
-	err := appConfig.JobRepo.Update(ctx, updates, updates.IndexId)
-	// err := appConfig.JobRepo.Update(ctx, updates)
+	// err := appConfig.JobRepo.Update(ctx, updates, updates.IndexId)
+	err := appConfig.JobRepo.Update(ctx, updates)
 	if err != nil {
 		appConfig.ErrorLog.Println(err)
 		return nil, err
@@ -341,6 +343,7 @@ func setScheduledAlerts(job *models.Job) {
 			"$gte": currentDate.AddDate(0, 0, int(job.StartDate)),
 			"$lt":  currentDate.AddDate(0, 0, int(job.EndDate)),
 		},
+		"isReadyToSend": true,
 	}
 
 	_, alerts, err := GetAlerts(filter)
@@ -353,17 +356,25 @@ func setScheduledAlerts(job *models.Job) {
 
 func sendMails(alerts []*models.Alert, job *models.Job) {
 	for _, alert := range alerts {
-		sendMail(alert, job)
+		sendMail(alert, job, time.Time{})
 	}
 }
 
 // sendMail Takes alert object and constructs a maildata object and sends mail
-func sendMail(alert *models.Alert, job *models.Job) {
-
+func sendMail(alert *models.Alert, job *models.Job, newMigrationDate time.Time) {
 	content := make(map[string]interface{})
 	content["MigrationId"] = alert.MigrationId
 	content["Volumes"] = alert.Volumes
 	content["MigrationDate"] = alert.MigrationDate.Format(time.RFC822)
+	if newMigrationDate.String() != "" {
+		content["NewMigrationDate"] = newMigrationDate.Format(time.RFC822)
+	}
+	if reflect.DeepEqual(alert.DistributionList, appConfig.Properties.NAS_DL) {
+		content["isMailToNASTeam"] = true
+		content["ApprovalPage"] = appConfig.Properties.GenesisUIApprovePage
+	} else {
+		content["isMailToNASTeam"] = false
+	}
 
 	mail := models.MailData{
 		To:       alert.DistributionList,
@@ -374,4 +385,70 @@ func sendMail(alert *models.Alert, job *models.Job) {
 	}
 
 	appConfig.MailChannel <- mail
+}
+
+func NotifyDateChange(migrationId string, migrationDateCR models.NotifyMigrationDateChange) error {
+	currentAlertDetails, err := GetAlertById(migrationId)
+	if err != nil {
+		return err
+	}
+	tempJob := &models.Job{
+		MailSubject:  appConfig.Properties.MD_CR_MailSubject,
+		TemplateName: appConfig.Properties.MD_CR_MailTemplate,
+	}
+	//send mail to user
+	sendMail(currentAlertDetails, tempJob, migrationDateCR.NewMigrationDate)
+
+	// TO DO - Is there a better way to create a copy?
+	copy := &models.Alert{
+		IndexId:          currentAlertDetails.IndexId,
+		MigrationId:      currentAlertDetails.MigrationId,
+		Volumes:          currentAlertDetails.Volumes,
+		DistributionList: appConfig.Properties.NAS_DL,
+		MigrationDate:    currentAlertDetails.MigrationDate,
+		AlertType:        currentAlertDetails.AlertType,
+		AlertStatus:      currentAlertDetails.AlertStatus,
+		AlertSentTime:    currentAlertDetails.AlertSentTime,
+		IsReadyToSend:    currentAlertDetails.IsReadyToSend,
+	}
+
+	//send mail to NAS, creating a copy since DL is modified with NAS DL
+	sendMail(copy, tempJob, migrationDateCR.NewMigrationDate)
+
+	return nil
+}
+
+func CompareStructs(s1, s2 interface{}) []string {
+	v1 := reflect.ValueOf(s1)
+	v2 := reflect.ValueOf(s2)
+
+	var differences []string
+
+	for i := 0; i < v1.NumField(); i++ {
+		field1 := v1.Field(i).Interface()
+		field2 := v2.Field(i).Interface()
+		if !reflect.DeepEqual(field1, field2) {
+			fieldName := v1.Type().Field(i).Name
+			differences = append(differences, fieldName)
+		}
+	}
+	return differences
+}
+
+func SendApprovedMail(alert *models.Alert, NewMigrationDate time.Time) {
+	tempJob := &models.Job{
+		MailSubject:  appConfig.Properties.MD_CR_ApprovedMailSubject,
+		TemplateName: appConfig.Properties.MD_CR_ApprovedMailTemplate,
+	}
+	alert.DistributionList = append(alert.DistributionList, appConfig.Properties.NAS_DL...)
+	sendMail(alert, tempJob, NewMigrationDate)
+}
+
+func SendRejectMail(alert *models.Alert) {
+	tempJob := &models.Job{
+		MailSubject:  appConfig.Properties.MD_CR_Reject_MailSubject,
+		TemplateName: appConfig.Properties.MD_CR_Reject_MailTemplate,
+	}
+	alert.DistributionList = append(alert.DistributionList, appConfig.Properties.NAS_DL...)
+	sendMail(alert, tempJob, time.Time{})
 }

@@ -25,7 +25,7 @@ type Alert struct {
 	DistributionList []string           `json:"distributionList,omitempty" bson:"distributionList,omitempty"`
 	AlertStatus      string             `json:"alertStatus,omitempty" bson:"alertStatus,omitempty"`
 	AlertSentTime    time.Time          `json:"alertSentTime,omitempty" bson:"alertSentTime,omitempty"`
-	IsReadyToSend    bool               `json:"isReadyToSend,omitempty" bson:"isReadyToSend,omitempty"`
+	IsReadyToSend    *bool              `json:"isReadyToSend,omitempty" bson:"isReadyToSend,omitempty"`
 }
 
 // Job holds schedule details to run
@@ -41,6 +41,12 @@ type Job struct {
 	MailSubject    string             `json:"mailSubject,omitempty" bson:"mailSubject,omitempty"`
 }
 
+// ErrorResponse holds error details
 type ErrorResponse struct {
 	ErrorMessage string
+}
+
+type NotifyMigrationDateChange struct {
+	IsReadyToSend    *bool     `json:"isReadyToSend"`
+	NewMigrationDate time.Time `json:"newMigrationDate,omitempty"`
 }

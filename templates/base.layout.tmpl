@@ -6,61 +6,127 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Responsive Email</title>
     <style>
+      /* Bootstrap-like styling for email compatibility */
       body {
         font-family: Arial, sans-serif;
-        line-height: 1.6;
-        color: #333;
         margin: 0;
         padding: 0;
+        background-color: #f4f4f4;
       }
+
       .container {
         width: 100%;
         max-width: 600px;
         margin: 0 auto;
+        background-color: #ffffff;
         padding: 20px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        background-color: #f9f9f9;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
       }
+
       .header {
-        background-color: #007bff;
-        color: #fff;
+        background-color: #007bffce;
+        color: #ffffff;
         padding: 10px;
         text-align: center;
+        border-radius: 0 0 0 0;
       }
-      .warning {
-        background-color: #ff1e00;
-        color: #fff;
-        padding: 10px;
-        text-align: center;
-      }
+
       .content {
-        padding: 20px;
+        padding: 20px 20px 0 20px;
       }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .table th,
+      .table td {
+        padding: 10px;
+        border: 1px solid #dddddd;
+        text-align: left;
+      }
+
+      .table th {
+        background-color: #007bffce;
+        color: white;
+      }
+
+      .table tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+
+      .approve-button {
+        display: inline-block;
+        padding: 10px 20px;
+        margin-top: 20px;
+        background-color: #28a745;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 4px;
+      }
+
+      .deny-button {
+        display: inline-block;
+        padding: 10px 20px;
+        margin-top: 20px;
+        background-color: #ed1a0f;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 4px;
+      }
+
       .footer {
         text-align: center;
         padding: 10px;
-        font-size: 0.9em;
-        color: #777;
+        font-size: 12px;
+        color: #777777;
+        margin-top: 20px;
+        border-top: 1px solid #dddddd;
       }
-      .signature p {
-        padding: 0px;
-        margin: 0px;
+
+      .signature {
+        padding-left: 20px;
+        color: #555555;
       }
-      @media (max-width: 600px) {
+
+      /* Responsive styles */
+      @media screen and (max-width: 600px) {
         .container {
+          width: 100%;
           padding: 10px;
         }
+
         .content {
           padding: 10px;
+        }
+
+        .table th,
+        .table td {
+          padding: 5px;
         }
       }
     </style>
   </head>
   <body>
-    {{block "content" .}}
+    <div class="container">
+      <div class="header">
+        <h1>Genesis</h1>
+      </div>
 
-    {{ end }}
+      {{block "content" .}}
+
+      {{ end }}
+
+      <div class="signature">
+        <p>Thank you,<br />Genesis Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; 2024 Your Company. All rights reserved.</p>
+      </div>
+    </div>
   </body>
 </html>
 {{ end }}

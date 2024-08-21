@@ -5,10 +5,9 @@
 <div class="content">
   <p>Hi Team,</p>
   <p>
-    This is a reminder email to notify regarding your NAS migration request
-    which is scheduled to begin on
-    {{ index .Content "MigrationDate"}}. Please reach out if you have any
-    questions as soon as possible.
+    Thank you for creating a request. Your NAS migration will begin as per
+    schedule. Stay tuned for updates and feel free to reach out if you have any
+    questions.
   </p>
 
   <table class="table">
@@ -16,12 +15,14 @@
       <tr>
         <th>MigrationId</th>
         <th>Volumes</th>
+        <th>MigrationDate</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <td>{{ index .Content "MigrationId"}}</td>
         <td>{{ index .Content "Volumes"}}</td>
+        <td>{{ index .Content "MigrationDate"}}</td>
       </tr>
     </tbody>
   </table>

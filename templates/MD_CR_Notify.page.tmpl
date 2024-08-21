@@ -1,0 +1,46 @@
+{{template "base" .}}
+
+{{define "content"}}
+
+<div class="content">
+  <p>Hi,</p>
+
+  {{ if index .Content "isMailToNASTeam" }}
+  <p>
+    Please review the below change request created and approve/deny the request
+    accordingly.
+  </p>
+  {{else}}
+  <p>
+    Thank you for creating a change request for your request id -
+    {{ index .Content "MigrationId"}}. Your request will be reviewed by a NAS
+    team member and will be approved or denied based on available bandwidth of
+    the team. Please find below details about the change.
+  </p>
+  {{ end }}
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>MigrationId</th>
+        <th>Volumes</th>
+        <th>Old MigrationDate</th>
+        <th>New MigrationDate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ index .Content "MigrationId"}}</td>
+        <td>{{ index .Content "Volumes"}}</td>
+        <td>{{ index .Content "MigrationDate"}}</td>
+        <td>{{ index .Content "NewMigrationDate"}}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  {{ if index .Content "isMailToNASTeam" }}
+  <a href="#" class="approve-button">Review</a>
+  {{ end }}
+</div>
+
+{{ end }}

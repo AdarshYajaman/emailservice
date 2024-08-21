@@ -38,15 +38,16 @@ func main() {
 
 	router.HandleFunc("GET /api/alerts", handler.GetAlerts)
 	router.HandleFunc("POST /api/alert", handler.CreateAlert)
-	router.HandleFunc("GET /api/alert/{id}", handler.GetAlert)
-	router.HandleFunc("PATCH /api/alert/{id}", handler.UpdateAlert)
-	router.HandleFunc("DELETE /api/alert/{id}", handler.DeleteAlert)
+	router.HandleFunc("POST /api/alert/notifyDateChange/{migrationId}", handler.NotifyDateChange)
+	router.HandleFunc("GET /api/alert/{migrationId}", handler.GetAlert)
+	router.HandleFunc("PATCH /api/alert/{migrationId}", handler.UpdateAlert)
+	router.HandleFunc("DELETE /api/alert/{migrationId}", handler.DeleteAlert)
 
 	router.HandleFunc("GET /api/jobs", handler.GetJobs)
 	router.HandleFunc("POST /api/job", handler.CreateJob)
-	router.HandleFunc("GET /api/job/{id}", handler.GetJob)
-	router.HandleFunc("PATCH /api/job/{id}", handler.UpdateJob)
-	router.HandleFunc("DELETE /api/job/{id}", handler.DeleteJob)
+	router.HandleFunc("GET /api/job/{jobId}", handler.GetJob)
+	router.HandleFunc("PATCH /api/job/{jobId}", handler.UpdateJob)
+	router.HandleFunc("DELETE /api/job/{jobId}", handler.DeleteJob)
 
 	//TODO - API endpoint to monitor mail channel capacity and size
 	//TODO - API endpoint to update job
@@ -90,10 +91,10 @@ func configure() error {
 	}
 
 	//setup repository
-	// alertRepo := repository.NewAlertRepository(client.Database(props.MongoDBName), props.AlertCollectionName)
-	// jobRepo := repository.NewJobRepository(client.Database(props.MongoDBName), props.JobCollectionName)
-	alertRepo := repository.NewCustomRepository[*models.Alert](client.Database(props.MongoDBName), props.AlertCollectionName)
-	jobRepo := repository.NewCustomRepository[*models.Job](client.Database(props.MongoDBName), props.JobCollectionName)
+	alertRepo := repository.NewAlertRepository(client.Database(props.MongoDBName), props.AlertCollectionName)
+	jobRepo := repository.NewJobRepository(client.Database(props.MongoDBName), props.JobCollectionName)
+	// alertRepo := repository.NewCustomRepository[*models.Alert](client.Database(props.MongoDBName), props.AlertCollectionName)
+	// jobRepo := repository.NewCustomRepository[*models.Job](client.Database(props.MongoDBName), props.JobCollectionName)
 
 	appConfig = config.AppWideConfig{
 		Properties:        props,
